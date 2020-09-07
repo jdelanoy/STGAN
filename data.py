@@ -124,6 +124,131 @@ class Dataset(object):
     def batch_op(self):
         return self._batch_op
 
+class Materials(Dataset):
+
+    att_dict = {'plastic': 0, 'rubber': 1, 'metallic': 2,
+                'fabric': 3, 'ceramic': 4, 'soft': 5, 'hard': 6,
+                'matte': 7, 'glossy': 8, 'bright': 9, 'rough': 10,
+                'refstrng': 11, 'refsharp': 12, 'reftint': 13}
+
+    def __init__(self, data_dir, atts, img_resize, batch_size, prefetch_batch=2, drop_remainder=True,
+                 num_threads=16, shuffle=True, buffer_size=4096, repeat=-1, sess=None, part='train', im_no=None):
+        super(Materials, self).__init__()
+
+        list_file = os.path.join(data_dir, 'attributes_dataset.txt')
+
+        img_dir_jpg = os.path.join(data_dir, '256px_dataset')
+
+        names = np.loadtxt(list_file, skiprows=1, usecols=[0], dtype=np.str)
+
+        img_paths = [os.path.join(img_dir_jpg, name) for name in names]
+
+        #TODO compute the att dict automatically
+        att_id = [Materials.att_dict[att] + 1 for att in atts]
+        labels = np.loadtxt(list_file, skiprows=2, usecols=att_id, dtype=np.int64)
+
+        def _map_func(img, label):
+            img = tf.image.resize_images(img, [img_resize, img_resize], tf.image.ResizeMethod.BICUBIC)
+            img = tf.clip_by_value(img, 0, 255) / 127.5 - 1
+            label = (label * 2) - 1 #put scores between -1 and 1
+            return img, label
+
+        if im_no is not None:
+            drop_remainder = False
+            shuffle = False
+            repeat = 1
+            img_paths = [img_paths[i-1] for i in im_no]
+            labels = labels[[i-1 for i in im_no]]
+        elif part == 'test':
+            drop_remainder = False
+            shuffle = False
+            repeat = 1
+            img_paths = img_paths[:985]
+            labels = labels[:985]
+        elif part == 'val':
+            img_paths = img_paths[:985]
+            labels = labels[:985]
+        else:
+            img_paths = img_paths[985:]
+            labels = labels[985:]
+
+        dataset = disk_image_batch_dataset(img_paths=img_paths,
+                                           labels=labels,
+                                           batch_size=batch_size,
+                                           prefetch_batch=prefetch_batch,
+                                           drop_remainder=drop_remainder,
+                                           map_func=_map_func,
+                                           num_threads=num_threads,
+                                           shuffle=shuffle,
+                                           buffer_size=buffer_size,
+                                           repeat=repeat)
+        self._bulid(dataset, sess)
+
+        self._img_num = len(img_paths)
+
+    def __len__(self):
+        return self._img_num
+
+#     @staticmethod
+#     def check_attribute_conflict(att_batch, att_name, att_names):
+#         def _set(att, value, att_name):
+#             if att_name in att_names:
+#                 att[att_names.index(att_name)] = value
+
+#         att_id = att_names.index(att_name)
+
+#         for att in att_batch:
+#             if att_name in ['Bald', 'Receding_Hairline'] and att[att_id] == 1:
+#                 _set(att, 0, 'Bangs')
+#             elif att_name == 'Bangs' and att[att_id] == 1:
+#                 _set(att, 0, 'Bald')
+#                 _set(att, 0, 'Receding_Hairline')
+#             elif att_name in ['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Gray_Hair'] and att[att_id] == 1:
+#                 for n in ['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Gray_Hair']:
+#                     if n != att_name:
+#                         _set(att, 0, n)
+#                 #_set(att, 0, 'bald')
+#             elif att_name in ['Straight_Hair', 'Wavy_Hair'] and att[att_id] == 1:
+#                 for n in ['Straight_Hair', 'Wavy_Hair']:
+#                     if n != att_name:
+#                         _set(att, 0, n)
+# # Removed since `Mustache` and `No_Beard` are not conflict.
+# # But the two attributes are not well labeled in the dataset.
+# #            elif att_name in ['Mustache', 'No_Beard'] and att[att_id] == 1:
+# #                for n in ['Mustache', 'No_Beard']:
+# #                    if n != att_name:
+# #                        _set(att, 0, n)
+
+#         return att_batch
+    
+#     @staticmethod
+#     def check_random_attribute_conflict(att_batch, att_names, hair_color=None):
+#         """ For randomly generated attributes, tested but not used in this repo. """
+#         def _set(att, value, att_name):
+#             if att_name in att_names:
+#                 att[att_names.index(att_name)] = value
+        
+#         def _idx(att_name):
+#             if att_name in att_names:
+#                 return att_names.index(att_name)
+#             return None
+        
+#         for att in att_batch:
+#             valid_atts = [i for i in ['Receding_Hairline', 'Bald'] if i in att_names]
+#             if 'Bangs' in att_names and att[_idx('Bangs')] == 1 \
+#                and len(valid_atts) > 0 and sum([att[_idx(i)] for i in valid_atts]) > 0:
+#                     _set(att, 0, 'Bangs') if random.random() < 0.5 else [_set(att, 0, i) for i in valid_atts]
+# #            hair_color = ['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Gray_Hair']
+#             if hair_color is not None and sum([att[_idx(i)] for i in hair_color]) > 1:
+#                 one = random.randint(0, len(hair_color))
+#                 for i in range(len(hair_color)):
+#                     _set(att, 1 if i==one else 0, hair_color[i])
+#             if 'Straight_Hair' in att_names and 'Wavy_Hair' in att_names and att[_idx('Straight_Hair')] == 1 and att[_idx('Wavy_Hair')] == 1:
+#                 _set(att, 0, 'Straight_Hair') if random.random() < 0.5 else _set(att, 0, 'Wavy_Hair')
+# #            if 'Mustache' in att_names and 'No_Beard' in att_names and att[_idx('Mustache')] == 1 and att[_idx('No_Beard')] == 1:
+# #                _set(att, 0, 'Mustache') if random.random() < 0.5 else _set(att, 0, 'No_Beard')
+#         return att_batch
+
 
 class Celeba(Dataset):
 

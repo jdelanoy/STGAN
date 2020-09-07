@@ -157,8 +157,8 @@ if threads >= 0:
 else:
     sess = tl.session()
 crop_ = not use_cropped_img
-tr_data = data.Celeba(dataroot, atts, img_size, batch_size, part='train', sess=sess, crop=crop_)
-val_data = data.Celeba(dataroot, atts, img_size, n_sample, part='val', shuffle=False, sess=sess, crop=crop_)
+tr_data = data.Materials(dataroot, atts, img_size, batch_size, part='train', sess=sess)
+val_data = data.Materials(dataroot, atts, img_size, n_sample, part='val', shuffle=False, sess=sess)
 
 # models
 Genc = partial(models.Genc, dim=enc_dim, n_layers=enc_layers, multi_inputs=multi_inputs)
@@ -173,7 +173,7 @@ lr = tf.placeholder(dtype=tf.float32, shape=[])
 
 xa = tr_data.batch_op[0]
 a = tr_data.batch_op[1]
-b = tf.random_shuffle(a)
+b = tf.random_shuffle(a) #TODO a+gaussian ? change only slighlty
 _a = (tf.to_float(a) * 2 - 1) * thres_int
 _b = (tf.to_float(b) * 2 - 1) * thres_int
 
@@ -316,7 +316,7 @@ try:
     for i in range(len(atts)):
         tmp = np.array(a_sample_ipt, copy=True)
         tmp[:, i] = 1 - tmp[:, i]   # inverse attribute
-        tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
+        #tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
         b_sample_ipt_list.append(tmp)
 
     it_per_epoch = len(tr_data) // (batch_size * (n_d + 1))
