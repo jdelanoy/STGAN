@@ -145,7 +145,7 @@ class Materials(Dataset):
 
         #TODO compute the att dict automatically
         att_id = [Materials.att_dict[att] + 1 for att in atts]
-        labels = np.loadtxt(list_file, skiprows=2, usecols=att_id, dtype=np.int64)
+        labels = np.loadtxt(list_file, skiprows=1, usecols=att_id, dtype=np.float32)
 
         def _map_func(img, label):
             img = tf.image.resize_images(img, [img_resize, img_resize], tf.image.ResizeMethod.BICUBIC)
