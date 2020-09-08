@@ -41,7 +41,7 @@ parser.add_argument('--threads', type=int, default=-1,
 # model
 att_default = ['Bald', 'Bangs', 'Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Bushy_Eyebrows', 'Eyeglasses',
                'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Young']
-parser.add_argument('--atts', default=att_default, choices=data.Celeba.att_dict.keys(), nargs='+',
+parser.add_argument('--atts', default=att_default, choices=data.Materials.att_dict.keys(), nargs='+',
                     help='Attributes to modify by the model')
 parser.add_argument('--img_size', type=int, default=128, help='input image size')
 parser.add_argument('--shortcut_layers', type=int, default=4,
