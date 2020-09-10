@@ -87,6 +87,7 @@ parser.add_argument('--sample_freq', type=int, default=0,
                     help='eval on validation set every sample_freq iters, 0 means to save evary epoch.')
 # others
 parser.add_argument('--use_cropped_img', action='store_true')
+parser.add_argument('--gaussian_stddev', type=float, default=0.5)
 parser.add_argument('--experiment_name', default=datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S"))
 parser.add_argument('--num_ckpt', type=int, default=1)
 parser.add_argument('--clear', default=False, action='store_true')
@@ -173,7 +174,8 @@ lr = tf.placeholder(dtype=tf.float32, shape=[])
 
 xa = tr_data.batch_op[0]
 a = tr_data.batch_op[1]
-b = tf.random_shuffle(a) #TODO a+gaussian ? change only slighlty
+#b = tf.random_shuffle(a) #TODO a+gaussian ? change only slighlty
+b=a+tf.random_normal(shape=[None, n_att], mean=0, stddev=args.gaussian_stddev)
 _a = (tf.to_float(a) * 2 - 1) * thres_int
 _b = (tf.to_float(b) * 2 - 1) * thres_int
 
@@ -315,7 +317,8 @@ try:
     b_sample_ipt_list = [a_sample_ipt]  # the first is for reconstruction
     for i in range(len(atts)):
         tmp = np.array(a_sample_ipt, copy=True)
-        tmp[:, i] = 1 - tmp[:, i]   # inverse attribute
+        tmp[:, i] = 1 - tmp[:, i]   # inverse attribute #TODO add gaussian noise
+        tmp[:, i] = tmp[:, i]+tf.random_normal(shape=[1], mean=0, stddev=args.gaussian_stddev)
         #tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
         b_sample_ipt_list.append(tmp)
 
@@ -365,7 +368,8 @@ try:
                     if i > 0:   # add a mark (+/-) in the upper-left corner to identify add/remove an attribute
                         for nnn in range(last_images.shape[0]):
                             last_images[nnn, 2:5, 0:7, :] = 1.
-                            if _b_sample_ipt[nnn, i-1] > 0:
+                            #if _b_sample_ipt[nnn, i-1] > 0: #TODO test if noise was +/-
+                            if _b_sample_ipt[nnn, i-1] - raw_b_sample_ipt[nnn, i-1] > 0:
                                 last_images[nnn, 0:7, 2:5, :] = 1.
                                 last_images[nnn, 1:6, 3:4, :] = -1.
                             last_images[nnn, 3:4, 1:6, :] = -1.

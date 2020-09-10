@@ -163,11 +163,11 @@ class Materials(Dataset):
             drop_remainder = False
             shuffle = False
             repeat = 1
-            img_paths = img_paths[:985]
-            labels = labels[:985]
+            img_paths = img_paths[:992]
+            labels = labels[:992]
         elif part == 'val':
-            img_paths = img_paths[:985]
-            labels = labels[:985]
+            img_paths = img_paths[:992]
+            labels = labels[:992]
         else:
             img_paths = img_paths[985:]
             labels = labels[985:]
