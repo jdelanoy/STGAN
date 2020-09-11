@@ -175,7 +175,7 @@ lr = tf.placeholder(dtype=tf.float32, shape=[])
 xa = tr_data.batch_op[0]
 a = tr_data.batch_op[1]
 #b = tf.random_shuffle(a) #TODO a+gaussian ? change only slighlty
-b=a+np.random.normal(0,args.gaussian_stddev,b.shape)
+b=a+np.random.normal(0,args.gaussian_stddev,a.shape)
 #tf.random_normal(shape=[None, n_att], mean=0, stddev=args.gaussian_stddev)
 _a = (tf.to_float(a) * 2 - 1) * thres_int
 _b = (tf.to_float(b) * 2 - 1) * thres_int
@@ -318,8 +318,8 @@ try:
     b_sample_ipt_list = [a_sample_ipt]  # the first is for reconstruction
     for i in range(len(atts)):
         tmp = np.array(a_sample_ipt, copy=True)
-        tmp[:, i] = 1 - tmp[:, i]   # inverse attribute #TODO add gaussian noise
-        tmp[:, i] = tmp[:, i]+tf.random_normal(shape=[1], mean=0, stddev=args.gaussian_stddev)
+        #tmp[:, i] = 1 - tmp[:, i]   # inverse attribute #TODO add gaussian noise
+        tmp[:, i] = tmp[:, i] #+tf.random_normal(shape=[1], mean=0, stddev=args.gaussian_stddev)
         #tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
         b_sample_ipt_list.append(tmp)
 
